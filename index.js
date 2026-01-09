@@ -128,7 +128,7 @@ app.delete("/api/trips/:id", async (req, res) => {
   }
 });
 
-app.listen(config.port, () => {
+app.listen(config.port, "0.0.0.0", () => {
   // eslint-disable-next-line no-console
-  console.log(`budget-tracker-be listening on :${config.port}`);
+  console.log(`budget-tracker-be listening on 0.0.0.0:${config.port}`);
 });
