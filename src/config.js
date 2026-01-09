@@ -15,7 +15,7 @@ function parseBool(v) {
 }
 
 module.exports = {
-  port: Number(optional("PORT", "3001")),
+  port: Number(optional("PORT", "4000")),
   nodeEnv: optional("NODE_ENV", "development"),
   corsOrigin: optional("CORS_ORIGIN", "*"),
   db: {
