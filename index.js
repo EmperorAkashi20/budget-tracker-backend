@@ -23,8 +23,10 @@ app.use(
 app.get("/health", async (_req, res) => {
   try {
     await db.healthcheck();
+    console.log("Health check passed");
     res.json({ ok: true });
   } catch (e) {
+    console.error("Health check failed:", e);
     res.status(500).json({ ok: false, error: String(e?.message || e) });
   }
 });
@@ -50,8 +52,10 @@ app.get("/api/trips", async (_req, res) => {
        from trips
        order by updated_at desc`
     );
+    console.log(`Retrieved ${result.rows.length} trips from database`);
     res.json({ trips: result.rows });
   } catch (e) {
+    console.error("Error fetching trips:", e);
     res.status(500).json({ error: String(e?.message || e) });
   }
 });
@@ -60,10 +64,14 @@ app.get("/api/trips/:id", async (req, res) => {
   try {
     const { id } = req.params;
     const result = await db.query(`select data from trips where id = $1`, [id]);
-    if (!result.rows.length)
+    if (!result.rows.length) {
+      console.log(`Trip ${id} not found in database`);
       return res.status(404).json({ error: "not_found" });
+    }
+    console.log(`Retrieved trip ${id} from database`);
     res.json(result.rows[0].data);
   } catch (e) {
+    console.error(`Error fetching trip ${req.params.id}:`, e);
     res.status(500).json({ error: String(e?.message || e) });
   }
 });
@@ -71,12 +79,18 @@ app.get("/api/trips/:id", async (req, res) => {
 app.post("/api/trips", async (req, res) => {
   try {
     const parsed = tripSchema.safeParse(req.body);
-    if (!parsed.success)
+    if (!parsed.success) {
+      console.error(
+        "Validation failed:",
+        JSON.stringify(parsed.error.flatten(), null, 2)
+      );
       return res
         .status(400)
         .json({ error: "invalid_trip", details: parsed.error.flatten() });
+    }
     const trip = parsed.data;
-    await db.query(
+    console.log(`Saving trip ${trip.id} to database...`);
+    const result = await db.query(
       `insert into trips (id, name, start_date, end_date, data)
        values ($1, $2, $3, $4, $5)
        on conflict (id) do update set
@@ -87,8 +101,13 @@ app.post("/api/trips", async (req, res) => {
          updated_at = now()`,
       [trip.id, trip.name, trip.startDate, trip.endDate, trip]
     );
+    console.log(
+      `Trip ${trip.id} saved successfully. Rows affected:`,
+      result.rowCount
+    );
     res.status(201).json({ ok: true, id: trip.id });
   } catch (e) {
+    console.error("Error saving trip to database:", e);
     res.status(500).json({ error: String(e?.message || e) });
   }
 });
