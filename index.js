@@ -78,12 +78,14 @@ app.get("/api/trips/:id", async (req, res) => {
 
 app.post("/api/trips", async (req, res) => {
   try {
+    console.log("Received trip data:", JSON.stringify(req.body, null, 2).substring(0, 500));
     const parsed = tripSchema.safeParse(req.body);
     if (!parsed.success) {
       console.error(
         "Validation failed:",
         JSON.stringify(parsed.error.flatten(), null, 2)
       );
+      console.error("Received body keys:", Object.keys(req.body || {}));
       return res
         .status(400)
         .json({ error: "invalid_trip", details: parsed.error.flatten() });
@@ -115,13 +117,21 @@ app.post("/api/trips", async (req, res) => {
 app.put("/api/trips/:id", async (req, res) => {
   try {
     const { id } = req.params;
+    console.log(`PUT /api/trips/${id} - Received trip data:`, JSON.stringify(req.body, null, 2).substring(0, 500));
     const parsed = tripSchema.safeParse({ ...req.body, id });
-    if (!parsed.success)
+    if (!parsed.success) {
+      console.error(
+        "PUT Validation failed:",
+        JSON.stringify(parsed.error.flatten(), null, 2)
+      );
+      console.error("PUT Received body keys:", Object.keys(req.body || {}));
       return res
         .status(400)
         .json({ error: "invalid_trip", details: parsed.error.flatten() });
+    }
     const trip = parsed.data;
-    await db.query(
+    console.log(`Updating trip ${trip.id} in database...`);
+    const result = await db.query(
       `update trips
        set name = $2,
            start_date = $3,
@@ -131,8 +141,10 @@ app.put("/api/trips/:id", async (req, res) => {
        where id = $1`,
       [id, trip.name, trip.startDate, trip.endDate, trip]
     );
+    console.log(`Trip ${trip.id} updated successfully. Rows affected:`, result.rowCount);
     res.json({ ok: true });
   } catch (e) {
+    console.error("Error updating trip in database:", e);
     res.status(500).json({ error: String(e?.message || e) });
   }
 });

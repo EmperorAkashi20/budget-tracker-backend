@@ -35,8 +35,8 @@ const tripSchema = z
   })
   .refine(
     (data) => {
-      // If currencies is present, it's valid (new format)
-      if (data.currencies) {
+      // If currencies is present and is a valid object (not null, not undefined), it's valid (new format)
+      if (data.currencies != null && typeof data.currencies === "object" && !Array.isArray(data.currencies)) {
         return true;
       }
       // Legacy format: all legacy fields must be present and valid
